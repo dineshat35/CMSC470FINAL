@@ -19,7 +19,7 @@ data = load_dataset('qanta', 'mode=first,char_skip=25', trust_remote_code=True)
 tokenizer = T5Tokenizer.from_pretrained('consciousAI/question-answering-generative-t5-v1-base-s-q-c', legacy=False)
 
 def preprocess_data(examples):
-  input_text = ["question: " + q + " context: " + c for q, c in zip(examples['full_question'], examples['text'])]
+  input_text = ["question: " + q + " context: " + c for q, c in zip(examples['first_sentence'], examples['text'])]
   targets = examples['answer']
 
   # Tokenize input texts

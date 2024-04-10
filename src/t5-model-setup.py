@@ -4,6 +4,7 @@ from datasets import load_dataset, load_metric
 import evaluate
 from transformers import T5Tokenizer, T5ForConditionalGeneration, Seq2SeqTrainingArguments, Seq2SeqTrainer
 import numpy as np
+
 # Clear CUDA cache
 torch.cuda.empty_cache()
 
@@ -23,11 +24,23 @@ def preprocess_data(examples):
 
   # Tokenize input texts
   model_inputs = tokenizer(input_text, max_length=512, truncation=True, padding="max_length", return_tensors='pt')
-  print(model_inputs)
 
   # Tokenize target texts
   labels = tokenizer(targets, max_length=128, truncation=True, padding="max_length", return_tensors='pt')
-  print(labels)
+  """ example tensor:{'input_ids': tensor([[ 822,   10,   37,  ...,    0,    0,    0],
+        [ 822,   10,  100,  ...,    0,    0,    0],
+        [ 822,   10,   86,  ...,    0,    0,    0],
+        ...,
+        [ 822,   10, 8529,  ...,    0,    0,    0],
+        [ 822,   10,  100,  ...,    0,    0,    0],
+        [ 822,   10,   37,  ...,    0,    0,    0]]), 'attention_mask': tensor([[1, 1, 1,  ..., 0, 0, 0],
+        [1, 1, 1,  ..., 0, 0, 0],
+        [1, 1, 1,  ..., 0, 0, 0],
+        ...,
+        [1, 1, 1,  ..., 0, 0, 0],
+        [1, 1, 1,  ..., 0, 0, 0],
+        [1, 1, 1,  ..., 0, 0, 0]])}
+  """
   model_inputs['labels'] = labels['input_ids']
   return model_inputs
 

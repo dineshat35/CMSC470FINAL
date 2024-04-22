@@ -1,3 +1,4 @@
 *.zip filter=lfs diff=lfs merge=lfs -text
 t5model_token.zip filter=lfs diff=lfs merge=lfs -text
 t5-model-params.zip filter=lfs diff=lfs merge=lfs -text
+t5-model-params/** filter=lfs diff=lfs merge=lfs -text

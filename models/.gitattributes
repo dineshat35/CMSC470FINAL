@@ -1,0 +1,1 @@
+t5-model-params/** filter=lfs diff=lfs merge=lfs -text

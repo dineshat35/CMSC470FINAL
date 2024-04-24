@@ -44,7 +44,6 @@ class QuizBowlModel:
         # Implemented a way to get our own finetuned models 
         model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 't5-model-params')
 
-        # Load the tokenizer and model
         self.test_tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.test_model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
         self.test_model.eval()
@@ -100,7 +99,7 @@ if __name__ == "__main__":
     model = QuizBowlModel()
     questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
         
-    with open('src/small.buzzdev.json', 'r') as file:
+    with open('data\small.buzzdev.json', 'r') as file:
         data = json.load(file)
         questions = [item['text'] for item in data['questions']]  # Assuming the JSON structure has 'text' keys
 

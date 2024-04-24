@@ -37,6 +37,7 @@ class QuizBowlModel:
         """
         Load your model(s) and whatever else you need in this function.
         """
+        # Implemented a way to get our own finetuned models 
         model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 't5-model-params')
 
         # Load the tokenizer and model

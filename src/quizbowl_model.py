@@ -8,6 +8,7 @@ import os
 import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
+import gzip
 
 kTOY_DATA = {"tiny": [{"text": "capital England", "page": "London"},
                       {"text": "capital Russia", "page": "Moscow"},
@@ -99,15 +100,19 @@ if __name__ == "__main__":
     model = QuizBowlModel()
     questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
         
-    with open('data\small.buzzdev.json', 'r') as file:
+    with gzip.open('data/qanta.guessdev.json.gz', 'rt', encoding='utf-8') as file: 
         data = json.load(file)
-        questions = [item['text'] for item in data['questions']]  # Assuming the JSON structure has 'text' keys
-
+    questions = [item['text'] for item in data]  
+    true_answers = [item['answer'] for item in data]
     answers = model.guess_and_buzz(questions[0:10])
+    count = 0
     for quest, ans in zip(questions, answers):
-        print(quest + "\n" + str(ans) + "\n")
+        print(quest + "\n" + "Model Guesses: " + ans + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
+        count += 1
     
     print("\nFinal Answers:")
     final_answers = model.ensemble_tfidf_voting(answers)
+    count = 0
     for quest, final_ans in zip(questions, final_answers):
-        print(quest + "\n" + final_ans + "\n")
+        print(quest + "\n" + "Model Guess: " + final_ans + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
+        count += 1

@@ -4,6 +4,7 @@ import pandas as pd
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
 from eval import normalize_answer
+import os
 kTOY_DATA = {"tiny": [{"text": "capital England", "page": "London"},
                       {"text": "capital Russia", "page": "Moscow"},
                       {"text": "currency England", "page": "Pound"},
@@ -36,6 +37,13 @@ class QuizBowlModel:
         """
         Load your model(s) and whatever else you need in this function.
         """
+        model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 't5-model-params')
+
+        # Load the tokenizer and model
+        self.test_tokenizer = AutoTokenizer.from_pretrained(model_dir)
+        self.test_model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
+        self.test_model.eval()
+        
         # Loading the FLAN-T5-large and FLAN-T5-small models to check
         self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained('google/flan-t5-large')
         self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-large')
@@ -50,17 +58,22 @@ class QuizBowlModel:
         """
         inputs_flan_t5 = self.tokenizer_flan_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
         inputs_t5 = self.tokenizer_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
-        
+        test_t5 = self.test_tokenizer(question_texts, return_tensors="pt", padding=True, truncation=True)
+
         with torch.no_grad():
             answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=5)
             answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=5)
+            test_t5 = self.test_model.generate(**test_t5, max_new_tokens=5)
+
         
         decoded_answers_flan_t5 = [normalize_answer(self.tokenizer_flan_t5.decode(ans, skip_special_tokens=True)) for ans in answers_flan_t5]
         decoded_answers_t5 = [normalize_answer(self.tokenizer_t5.decode(ans, skip_special_tokens=True)) for ans in answers_t5]
+        test_decoded_answers_t5 = [normalize_answer(self.test_tokenizer.decode(ans, skip_special_tokens=True)) for ans in test_t5]
+
         # print(decoded_answers_flan_t5)
         # print(decoded_answers_t5)
         # Combine answers by having them in a tuple **modify later
-        final_answers = [(a1, a2) for a1, a2 in zip(decoded_answers_flan_t5, decoded_answers_t5)]
+        final_answers = [(a1, a2, a3) for a1, a2, a3 in zip(decoded_answers_flan_t5, decoded_answers_t5, test_decoded_answers_t5)]
         
         return final_answers
 

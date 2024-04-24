@@ -36,8 +36,8 @@ class QuizBowlModel:
         Load your model(s) and whatever else you need in this function.
         """
         # Loading the FLAN-T5-large and FLAN-T5-small models to check
-        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained('google/flan-t5-base')
-        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-base')
+        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained('google/flan-t5-large')
+        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-large')
         
         self.tokenizer_t5 = AutoTokenizer.from_pretrained('google/flan-t5-small')
         self.model_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-small')
@@ -51,8 +51,8 @@ class QuizBowlModel:
         inputs_t5 = self.tokenizer_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
         
         with torch.no_grad():
-            answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=50)
-            answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=50)
+            answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=10)
+            answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=10)
         
         decoded_answers_flan_t5 = [self.tokenizer_flan_t5.decode(ans, skip_special_tokens=True) for ans in answers_flan_t5]
         decoded_answers_t5 = [self.tokenizer_t5.decode(ans, skip_special_tokens=True) for ans in answers_t5]

@@ -5,7 +5,7 @@ from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
 from eval import normalize_answer
 import os
-
+import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -99,12 +99,14 @@ class QuizBowlModel:
 if __name__ == "__main__":
     model = QuizBowlModel()
     questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
-    for key in kTOY_DATA:
-        for item in kTOY_DATA[key]:
-            questions.append(item['text'])
-    answers = model.guess_and_buzz(questions)
+        
+    with open('src/small.buzzdev.json', 'r') as file:
+        data = json.load(file)
+        questions = [item['text'] for item in data['questions']]  # Assuming the JSON structure has 'text' keys
+
+    answers = model.guess_and_buzz(questions[0:10])
     for quest, ans in zip(questions, answers):
-        print(str(quest) + " : " + str(ans) )
+        print(quest + "\n" + str(ans) + "\n")
     
     print("\nFinal Answers:")
     final_answers = model.ensemble_tfidf_voting(answers)

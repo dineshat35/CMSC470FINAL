@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 import torch
+from eval import normalize_answer
 kTOY_DATA = {"tiny": [{"text": "capital England", "page": "London"},
                       {"text": "capital Russia", "page": "Moscow"},
                       {"text": "currency England", "page": "Pound"},
@@ -51,15 +52,14 @@ class QuizBowlModel:
         inputs_t5 = self.tokenizer_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
         
         with torch.no_grad():
-            answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=10)
-            answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=10)
+            answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=5)
+            answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=5)
         
-        decoded_answers_flan_t5 = [self.tokenizer_flan_t5.decode(ans, skip_special_tokens=True) for ans in answers_flan_t5]
-        decoded_answers_t5 = [self.tokenizer_t5.decode(ans, skip_special_tokens=True) for ans in answers_t5]
+        decoded_answers_flan_t5 = [normalize_answer(self.tokenizer_flan_t5.decode(ans, skip_special_tokens=True)) for ans in answers_flan_t5]
+        decoded_answers_t5 = [normalize_answer(self.tokenizer_t5.decode(ans, skip_special_tokens=True)) for ans in answers_t5]
         # print(decoded_answers_flan_t5)
         # print(decoded_answers_t5)
-        
-        # Combine answers by simple averaging
+        # Combine answers by having them in a tuple **modify later
         final_answers = [(a1, a2) for a1, a2 in zip(decoded_answers_flan_t5, decoded_answers_t5)]
         
         return final_answers
@@ -72,5 +72,5 @@ if __name__ == "__main__":
             questions.append(item['text'])
     answers = model.guess_and_buzz(questions)
     for quest, ans in zip(questions, answers):
-        print(str(quest) + "   :   " + str(ans) )
+        print(str(quest) + " : " + str(ans) )
 

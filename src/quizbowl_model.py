@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import numpy as np
 import pandas as pd
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+from transformers import AutoModelForSeq2SeqLM, AutoTokenizer, RobertaForSequenceClassification, RobertaTokenizer, ElectraModel, ElectraForCausalLM, GPT2Tokenizer, GPT2Model, GPT2LMHeadModel
 import torch
 from eval import normalize_answer
 import os
@@ -44,17 +44,26 @@ class QuizBowlModel:
         """
         # Implemented a way to get our own finetuned models 
         model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 't5-model-params')
-
         self.test_tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.test_model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
         self.test_model.eval()
         
-        # Loading the FLAN-T5-large and FLAN-T5-small models to check
-        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained('google/flan-t5-large')
-        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-large')
+        # loaded gpt model 
+        # gpt_model = 'gpt2'
+        # self.tokenizer_gpt = GPT2Tokenizer.from_pretrained(gpt_model, padding_side='left')
+        # self.model_gpt = GPT2LMHeadModel.from_pretrained(gpt_model)
+        # if self.tokenizer_gpt.pad_token is None:
+        #     print("No pad token found; setting pad token to the default EOS token.")
+        #     self.tokenizer_gpt.pad_token = self.tokenizer_gpt.eos_token 
         
-        self.tokenizer_t5 = AutoTokenizer.from_pretrained('google/flan-t5-small')
-        self.model_t5 = AutoModelForSeq2SeqLM.from_pretrained('google/flan-t5-small')
+        # Loading the FLAN-T5-large and FLAN-T5-small models to check
+        flan_t5 = 'google/flan-t5-large'
+        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained(flan_t5)
+        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained(flan_t5)
+        
+        t5 = 'google/flan-t5-small'
+        self.tokenizer_t5 = AutoTokenizer.from_pretrained(t5)
+        self.model_t5 = AutoModelForSeq2SeqLM.from_pretrained(t5)
         
     def guess_and_buzz(self, question_texts):
         """
@@ -107,7 +116,7 @@ if __name__ == "__main__":
     answers = model.guess_and_buzz(questions[0:10])
     count = 0
     for quest, ans in zip(questions, answers):
-        print(quest + "\n" + "Model Guesses: " + ans + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
+        print(quest + "\n" + "Model Guesses: " + str(ans) + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
         count += 1
     
     print("\nFinal Answers:")

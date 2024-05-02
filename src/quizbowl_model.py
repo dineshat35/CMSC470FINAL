@@ -75,9 +75,24 @@ class QuizBowlModel:
     def decode_answer(self, model, tokenizer, input_text):
         input_ids = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True)
         with torch.no_grad():
-            output_ids = model.generate(**input_ids, max_new_tokens=5)
-        decoded_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
-        return normalize_answer(decoded_text)
+            outputs = model.generate(**input_ids, max_new_tokens=5, output_scores=True, return_dict_in_generate=True)
+        
+        decoded_text = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
+        
+        if outputs.scores:
+            log_probs = [torch.nn.functional.log_softmax(score, dim=-1) for score in outputs.scores]
+            scores = []
+            for i in range(len(outputs.sequences[0]) - 1):
+                selected_log_prob = log_probs[i][0, outputs.sequences[0][i + 1]].item()
+                scores.append(selected_log_prob)
+            confidence_score = np.exp(np.mean(scores))
+        else:
+            confidence_score = None
+
+        return decoded_text, confidence_score
+
+
+
     def aggregate_answers(self, answers):
         """Aggregate answers using a voting mechanism based on TF-IDF similarity."""
         final_answers = list(self.ensemble_tfidf_voting(answers))
@@ -86,11 +101,13 @@ class QuizBowlModel:
     def ensemble_tfidf_voting(self, all_answers):
         """Apply TF-IDF voting to select the most likely answer from the ensemble."""
         for answers in all_answers:
+            texts = [answer[0] for answer in answers]
+            
             vectorizer = TfidfVectorizer()
-            tfidf_matrix = vectorizer.fit_transform(answers)
+            tfidf_matrix = vectorizer.fit_transform(texts)
             cosine_scores = cosine_similarity(tfidf_matrix)
             most_similar_index = np.argmax(np.mean(cosine_scores, axis=0))
-            yield answers[most_similar_index]
+            yield answers[most_similar_index][0]
 
 if __name__ == "__main__":
     # Initialize the QuizBowlModel

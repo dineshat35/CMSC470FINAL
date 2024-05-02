@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # Initialize the QuizBowlModel
     model = QuizBowlModel()
     hardcoded_questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
-    # Load questions from a compressed JSON file (modify this code to make sure it works)
+    # Load questions from a compressed JSON file
     file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'qanta.guessdev.json.gz')
     with gzip.open(file_path, 'rt', encoding='utf-8') as file:
         data = json.load(file)

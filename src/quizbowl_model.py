@@ -39,89 +39,82 @@ kTOY_DATA = {"tiny": [{"text": "capital England", "page": "London"},
                 }
 class QuizBowlModel:
     def __init__(self):
-        """
-        Load your model(s) and whatever else you need in this function.
-        """
-        # Implemented a way to get our own finetuned models 
+        self.load_models()
+
+    def load_models(self):
+        """Load all models"""
         model_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'models', 't5-model-params')
+        self.load_seq2seq_model(model_dir)
+        self.load_flan_models('google/flan-t5-large', 'google/flan-t5-small')
+
+    def load_seq2seq_model(self, model_dir):
+        """Load saved models"""
         self.test_tokenizer = AutoTokenizer.from_pretrained(model_dir)
         self.test_model = AutoModelForSeq2SeqLM.from_pretrained(model_dir)
         self.test_model.eval()
-        
-        # loaded gpt model 
-        # gpt_model = 'gpt2'
-        # self.tokenizer_gpt = GPT2Tokenizer.from_pretrained(gpt_model, padding_side='left')
-        # self.model_gpt = GPT2LMHeadModel.from_pretrained(gpt_model)
-        # if self.tokenizer_gpt.pad_token is None:
-        #     print("No pad token found; setting pad token to the default EOS token.")
-        #     self.tokenizer_gpt.pad_token = self.tokenizer_gpt.eos_token 
-        
-        # Loading the FLAN-T5-large and FLAN-T5-small models to check
-        flan_t5 = 'google/flan-t5-large'
-        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained(flan_t5)
-        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained(flan_t5)
-        
-        t5 = 'google/flan-t5-small'
-        self.tokenizer_t5 = AutoTokenizer.from_pretrained(t5)
-        self.model_t5 = AutoModelForSeq2SeqLM.from_pretrained(t5)
-        
+
+    def load_flan_models(self, large_model_id, small_model_id):
+        """Load hugging face models."""        
+        self.tokenizer_flan_t5 = AutoTokenizer.from_pretrained(large_model_id)
+        self.model_flan_t5 = AutoModelForSeq2SeqLM.from_pretrained(large_model_id)
+        self.tokenizer_t5 = AutoTokenizer.from_pretrained(small_model_id)
+        self.model_t5 = AutoModelForSeq2SeqLM.from_pretrained(small_model_id)
+
     def guess_and_buzz(self, question_texts):
-        """
-        This function accepts a list of question strings and returns a list of tuples containing
-        the guess and a boolean indicating whether to buzz.
-        """
-        inputs_flan_t5 = self.tokenizer_flan_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
-        inputs_t5 = self.tokenizer_t5(question_texts, return_tensors="pt", padding=True, truncation=True)
-        test_t5 = self.test_tokenizer(question_texts, return_tensors="pt", padding=True, truncation=True)
+        """Generate answers from all models for given questions"""
+        return self.generate_answers(question_texts)
 
+    def generate_answers(self, question_texts):
+        """Generate answers from each model."""
+        # Tokenize and generate answers using each model
+        return [(self.decode_answer(self.model_flan_t5, self.tokenizer_flan_t5, question),
+                 self.decode_answer(self.model_t5, self.tokenizer_t5, question),
+                 self.decode_answer(self.test_model,self.test_tokenizer , question))
+                for question in question_texts]
+
+    def decode_answer(self, model, tokenizer, input_text):
+        input_ids = tokenizer(input_text, return_tensors="pt", padding=True, truncation=True)
         with torch.no_grad():
-            answers_flan_t5 = self.model_flan_t5.generate(**inputs_flan_t5, max_new_tokens=5)
-            answers_t5 = self.model_t5.generate(**inputs_t5, max_new_tokens=5)
-            test_t5 = self.test_model.generate(**test_t5, max_new_tokens=5)
-
-        
-        decoded_answers_flan_t5 = [normalize_answer(self.tokenizer_flan_t5.decode(ans, skip_special_tokens=True)) for ans in answers_flan_t5]
-        decoded_answers_t5 = [normalize_answer(self.tokenizer_t5.decode(ans, skip_special_tokens=True)) for ans in answers_t5]
-        test_decoded_answers_t5 = [normalize_answer(self.test_tokenizer.decode(ans, skip_special_tokens=True)) for ans in test_t5]
-
-        # print(decoded_answers_flan_t5)
-        # print(decoded_answers_t5)
-        # Combine answers by having them in a tuple **modify later
-        final_answers = [(a1, a2, a3) for a1, a2, a3 in zip(decoded_answers_flan_t5, decoded_answers_t5, test_decoded_answers_t5)]
-        # final_answers = [(a1, a2) for a1, a2 in zip(decoded_answers_flan_t5, decoded_answers_t5)]
-        
+            output_ids = model.generate(**input_ids, max_new_tokens=5)
+        decoded_text = tokenizer.decode(output_ids[0], skip_special_tokens=True)
+        return normalize_answer(decoded_text)
+    def aggregate_answers(self, answers):
+        """Aggregate answers using a voting mechanism based on TF-IDF similarity."""
+        final_answers = list(self.ensemble_tfidf_voting(answers))
         return final_answers
-    
+
     def ensemble_tfidf_voting(self, all_answers):
+        """Apply TF-IDF voting to select the most likely answer from the ensemble."""
         for answers in all_answers:
             vectorizer = TfidfVectorizer()
             tfidf_matrix = vectorizer.fit_transform(answers)
-            highest_sim = cosine_similarity(tfidf_matrix, tfidf_matrix[0]).mean()
-            highest_sim_index = 0
-            for i in range(1, len(answers)):
-                sim = cosine_similarity(tfidf_matrix, tfidf_matrix[i]).mean()
-                if sim > highest_sim:
-                    highest_sim_index = i
-                    highest_sim = sim
-            yield answers[highest_sim_index]
+            cosine_scores = cosine_similarity(tfidf_matrix)
+            most_similar_index = np.argmax(np.mean(cosine_scores, axis=0))
+            yield answers[most_similar_index]
 
 if __name__ == "__main__":
+    # Initialize the QuizBowlModel
     model = QuizBowlModel()
-    questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
-        
-    with gzip.open('data/qanta.guessdev.json.gz', 'rt', encoding='utf-8') as file: 
+    hardcoded_questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
+    # Load questions from a compressed JSON file (modify this code to make sure it works)
+    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'qanta.guessdev.json.gz')
+    with gzip.open(file_path, 'rt', encoding='utf-8') as file:
         data = json.load(file)
-    questions = [item['text'] for item in data]  
-    true_answers = [item['answer'] for item in data]
-    answers = model.guess_and_buzz(questions[0:10])
-    count = 0
-    for quest, ans in zip(questions, answers):
-        print(quest + "\n" + "Model Guesses: " + str(ans) + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
-        count += 1
+    true_answers = ["Jane Austen", "Paris"]
+
+    loaded_questions = [item['text'] for item in data]  
+    true_answers += [item['answer'] for item in data]
+    questions = hardcoded_questions + loaded_questions[:8]  # Adjust as needed
+    total_answers = model.guess_and_buzz(questions)
     
-    print("\nFinal Answers:")
-    final_answers = model.ensemble_tfidf_voting(answers)
-    count = 0
-    for quest, final_ans in zip(questions, final_answers):
-        print(quest + "\n" + "Model Guess: " + final_ans + "\n" + "\n" + "Right answer: " + true_answers[count]+"\n\n")
-        count += 1
+    # Display the model's guesses before voting
+    for question, model_answers, true_answer in zip(questions, total_answers, true_answers):
+        print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+
+    # Applying the voting mechanism
+    print("Final Answers with Voting Mechanism:")
+    final_answers = model.ensemble_tfidf_voting(total_answers)
+    
+    # Display the answers after voting process
+    for question, final_answer, true_answer in zip(questions, final_answers, true_answers):
+        print(f"{question}\nRefined Model Guess: {final_answer}\nCorrect Answer: {true_answer}\n\n")

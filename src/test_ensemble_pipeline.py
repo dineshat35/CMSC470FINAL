@@ -28,6 +28,7 @@ class TestEnsembleQAPipeline(Text2TextGenerationPipeline):
             results = {'guess': guess_text, 'confidence': confidence}
         return results
 
+# From class eval.py code
 def normalize_answer(answer):
     """
     Remove superflous components to create a normalized form of an answer that

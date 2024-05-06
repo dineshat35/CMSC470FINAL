@@ -62,7 +62,13 @@ class QuizBowlModel:
 
     def guess_and_buzz(self, question_texts):
         """Generate answers from all models for given questions"""
-        return self.generate_answers(question_texts)
+        total_answers = self.generate_answers(question_texts)
+        # Display the model's guesses before voting
+        # print("Answers Before Voting Mechanism:")
+
+        # for question, model_answers in zip(question_texts, total_answers):
+        #     print(f"{question}\nModel Guesses: {model_answers}\n\n")
+        return self.ensemble_tfidf_voting(total_answers)
 
     def generate_answers(self, question_texts):
         """Generate answers from each model."""
@@ -91,13 +97,6 @@ class QuizBowlModel:
 
         return decoded_text, confidence_score
 
-
-
-    def aggregate_answers(self, answers):
-        """Aggregate answers using a voting mechanism based on TF-IDF similarity."""
-        final_answers = list(self.ensemble_tfidf_voting(answers))
-        return final_answers
-
     def ensemble_tfidf_voting(self, all_answers):
         """Apply TF-IDF voting to select the most likely answer from the ensemble."""
         for answers in all_answers:
@@ -107,7 +106,7 @@ class QuizBowlModel:
             tfidf_matrix = vectorizer.fit_transform(texts)
             cosine_scores = cosine_similarity(tfidf_matrix)
             most_similar_index = np.argmax(np.mean(cosine_scores, axis=0))
-            yield answers[most_similar_index][0]
+            yield {'guess': answers[most_similar_index][0], 'confidence': answers[most_similar_index][1]}
 
 if __name__ == "__main__":
     # Initialize the QuizBowlModel
@@ -121,17 +120,10 @@ if __name__ == "__main__":
 
     loaded_questions = [item['text'] for item in data]  
     true_answers += [item['answer'] for item in data]
-    questions = hardcoded_questions + loaded_questions[:8]  # Adjust as needed
+    questions = hardcoded_questions + loaded_questions[:8]  # Increase if needed
     total_answers = model.guess_and_buzz(questions)
     
-    # Display the model's guesses before voting
+    print("Final Answers with Voting Mechanism:")
+    # Display the model's after entire ensemble approach
     for question, model_answers, true_answer in zip(questions, total_answers, true_answers):
         print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
-
-    # Applying the voting mechanism
-    print("Final Answers with Voting Mechanism:")
-    final_answers = model.ensemble_tfidf_voting(total_answers)
-    
-    # Display the answers after voting process
-    for question, final_answer, true_answer in zip(questions, final_answers, true_answers):
-        print(f"{question}\nRefined Model Guess: {final_answer}\nCorrect Answer: {true_answer}\n\n")

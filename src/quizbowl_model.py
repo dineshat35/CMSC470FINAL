@@ -98,15 +98,19 @@ class QuizBowlModel:
         return decoded_text, confidence_score
 
     def ensemble_tfidf_voting(self, all_answers):
-        """Apply TF-IDF voting to select the most likely answer from the ensemble."""
+        """Find answer with highest confidence"""
         for answers in all_answers:
-            texts = [answer[0] for answer in answers]
+            highest_confidence_answer = max(answers, key=lambda x: x[1])
+            yield {'guess': highest_confidence_answer[0], 'confidence': highest_confidence_answer[1]}
+
+        # for answers in all_answers:
+        #     texts = [answer[0] for answer in answers]
             
-            vectorizer = TfidfVectorizer()
-            tfidf_matrix = vectorizer.fit_transform(texts)
-            cosine_scores = cosine_similarity(tfidf_matrix)
-            most_similar_index = np.argmax(np.mean(cosine_scores, axis=0))
-            yield {'guess': answers[most_similar_index][0], 'confidence': answers[most_similar_index][1]}
+        #     vectorizer = TfidfVectorizer()
+        #     tfidf_matrix = vectorizer.fit_transform(texts)
+        #     cosine_scores = cosine_similarity(tfidf_matrix)
+        #     most_similar_index = np.argmax(np.mean(cosine_scores, axis=0))
+        #     yield {'guess': answers[most_similar_index][0], 'confidence': answers[most_similar_index][1]}
 
 if __name__ == "__main__":
     # Initialize the QuizBowlModel

@@ -105,23 +105,3 @@ class QuizBowlModel:
 
     def ensemble_tfidf_voting(self, answers):
         return max(answers, key=lambda x: x[1]) if answers else (None, 0)
-
-if __name__ == "__main__":
-    # Initialize the QuizBowlModel
-    model = QuizBowlModel()
-    hardcoded_questions = ["Who wrote 'Pride and Prejudice'?", "What is the capital of France?"]
-    # Load questions from a compressed JSON file
-    file_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data', 'qanta.guessdev.json.gz')
-    with gzip.open(file_path, 'rt', encoding='utf-8') as file:
-        data = json.load(file)
-    true_answers = ["Jane Austen", "Paris"]
-
-    loaded_questions = [item['text'] for item in data]  
-    true_answers += [item['answer'] for item in data]
-    questions = hardcoded_questions + loaded_questions[:8]  # Increase if needed
-    total_answers = model.guess_and_buzz(questions)
-    
-    print("Final Answers with Voting Mechanism:")
-    # Display the model's after entire ensemble approach
-    for question, model_answers, true_answer in zip(questions, total_answers, true_answers):
-        print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")

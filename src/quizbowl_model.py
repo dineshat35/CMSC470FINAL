@@ -63,8 +63,8 @@ class QuizBowlModel:
     def guess_and_buzz(self, question_texts):
         total_answers = [self.generate_answers(question) for question in question_texts]
         # here to check all models responses if needed
-        for question, model_answers in zip(question_texts, total_answers):
-            print(f"{question}\nModel Guesses: {model_answers}\n")
+        # for question, model_answers in zip(question_texts, total_answers):
+        #     print(f"{question}\nModel Guesses: {model_answers}\n")
         return [self.ensemble_tfidf_voting(answers) for answers in total_answers]
 
     def generate_answers(self, question):

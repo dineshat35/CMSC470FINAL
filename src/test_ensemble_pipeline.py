@@ -56,8 +56,8 @@ class QuizBowlModel:
             'flan-t5-large': {'model': 'google/flan-t5-large', 'tokenizer': 'google/flan-t5-large'},
             'flan-t5-small': {'model': 'google/flan-t5-small', 'tokenizer': 'google/flan-t5-small'},
             'flan-t5-base': {'model': 'google/flan-t5-base', 'tokenizer': 'google/flan-t5-base'},
-            'flan-t5-finetuned': {'model': 'dbalasub/finetuned-t5-qanta', 'tokenizer': 'dbalasub/finetuned-t5-qanta'}
-
+            'flan-t5-finetuned': {'model': 'dbalasub/finetuned-t5-qanta', 'tokenizer': 'dbalasub/finetuned-t5-qanta'},
+            'flan-t5-adv-finetuned': {'model': 'dbalasub/finetuned-t5-adv-qanta', 'tokenizer': 'dbalasub/finetuned-t5-adv-qanta'}
         }
         self.models = {}
         self.tokenizers = {}

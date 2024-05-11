@@ -106,3 +106,16 @@ class QuizBowlModel:
 
     def ensemble_tfidf_voting(self, answers):
         return max(answers, key=lambda x: x[1]) if answers else (None, 0)
+# from transformers.pipelines import Pipeline, PIPELINE_REGISTRY
+# from transformers import AutoModelForSeq2SeqLM, TFAutoModelForSeq2SeqLM
+# from test_ensemble import TestEnsembleQAPipeline
+# from transformers import pipeline
+
+# # Register your custom pipeline for PyTorch and TensorFlow models
+# PIPELINE_REGISTRY.register_pipeline("test-qa", 
+#                                     pipeline_class=TestEnsembleQAPipeline, 
+#                                     pt_model=AutoModelForSeq2SeqLM, 
+#                                     tf_model=TFAutoModelForSeq2SeqLM)
+# qa_pipe = pipeline("test-qa", model="google/flan-t5-small", tokenizer="google/flan-t5-small")
+
+# qa_pipe.push_to_hub("test-qa")

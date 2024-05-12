@@ -49,7 +49,6 @@ class TestEnsembleQAPipeline(Text2TextGenerationPipeline):
 #         if reduced.startswith(bad_start):
 #             reduced = reduced[len(bad_start):]
 #     return reduced.strip()
-
 class QuizBowlModel:
     def __init__(self):
         model_configs = {
@@ -83,17 +82,18 @@ class QuizBowlModel:
         raw_answers = []
         for model_name, model in self.models.items():
             tokenizer = self.tokenizers[model_name]
-            input_ids = tokenizer(question, return_tensors="pt", padding=True, truncation=True).input_ids
+            input_ids = tokenizer(question, return_tensors="pt", padding=True, truncation=False).input_ids
             with torch.no_grad():
                 outputs = model.generate(input_ids, max_new_tokens=5, output_scores=True, return_dict_in_generate=True)
             decoded_text = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
             confidence_score = self.calculate_confidence(outputs.scores)
             raw_answers.append((decoded_text, confidence_score))
 
-        total_scores = sum([score for _, score in raw_answers])
-        answers = [(text, score / total_scores if total_scores > 0 else 0) for text, score in raw_answers]
+        # normalization if needed
+        # total_scores = sum([score for _, score in raw_answers])
+        # answers = [(text, score / total_scores if total_scores > 0 else 0) for text, score in raw_answers]
         
-        return answers
+        return raw_answers
 
     def calculate_confidence(self, scores):
         if scores:
@@ -104,8 +104,10 @@ class QuizBowlModel:
             confidence_score = None
         return confidence_score
 
-    def ensemble_tfidf_voting(self, answers):
-        return max(answers, key=lambda x: x[1]) if answers else (None, 0)
+    def ensemble_tfidf_voting(self, all_answers):
+        return max(all_answers, key=lambda x: x[1]) if all_answers else (None, 0)
+
+
 # from transformers.pipelines import Pipeline, PIPELINE_REGISTRY
 # from transformers import AutoModelForSeq2SeqLM, TFAutoModelForSeq2SeqLM
 # from test_ensemble import TestEnsembleQAPipeline

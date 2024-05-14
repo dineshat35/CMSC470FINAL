@@ -9,6 +9,8 @@ import json
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import gzip
+from difflib import SequenceMatcher
+
 import logging
 logging.getLogger("transformers").setLevel(logging.ERROR)
 kTOY_DATA = {"tiny": [{"text": "capital England", "page": "London"},
@@ -62,10 +64,13 @@ class QuizBowlModel:
             self.tokenizers[model_name] = tokenizer
 
     def guess_and_buzz(self, question_texts):
-        total_answers = [self.generate_answers(question) for question in question_texts]
+        total_answers = [self.generate_answers("question: " + question) for question in question_texts]
         # here to check all models responses if needed
         # for question, model_answers in zip(question_texts, total_answers):
         #     print(f"{question}\nModel Guesses: {model_answers}\n")
+        # for question, model_answers, true_answer in zip(question_texts, total_answers, true_answers):
+        #     print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+
         return [self.ensemble_tfidf_voting(answers) for answers in total_answers]
 
     def generate_answers(self, question):
@@ -94,8 +99,13 @@ class QuizBowlModel:
             confidence_score = None
         return confidence_score
 
-    def ensemble_tfidf_voting(self, all_answers):
-        return max(all_answers, key=lambda x: x[1]) if all_answers else (None, 0)
+    def ensemble_tfidf_voting(self, all_answers, boost_factor=1.2, model_index=4):
+        boosted_answers = [(answer if idx != model_index else (answer[0], answer[1] * boost_factor))
+                        for idx, answer in enumerate(all_answers)]
+        if boosted_answers:
+            return max(boosted_answers, key=lambda x: x[1])
+        else:
+            return None, 0
 
 # from transformers.pipelines import Pipeline, PIPELINE_REGISTRY
 # from transformers import AutoModelForSeq2SeqLM, TFAutoModelForSeq2SeqLM
@@ -123,10 +133,20 @@ if __name__ == "__main__":
 
     loaded_questions = [item['text'] for item in data]  
     true_answers += [item['answer'] for item in data]
-    questions = hardcoded_questions + loaded_questions[:8]  # Increase if needed
+    questions = hardcoded_questions + loaded_questions[:100]  # Increase if needed
     total_answers = model.guess_and_buzz(questions)
     
     print("Final Answers with Voting Mechanism:")
     # Display the model's after entire ensemble approach
+
+    def is_similar(answer1, answer2):
+        # Normalize answers to lower case for case insensitive comparison
+        answer1 = answer1.lower().strip()
+        answer2 = answer2.lower().strip()
+        # Calculate similarity ratio
+        similarity = SequenceMatcher(None, answer1, answer2).ratio()
+        return similarity > 0.8  # Consider answers similar if similarity is above 80%
+
     for question, model_answers, true_answer in zip(questions, total_answers, true_answers):
-        print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+        if is_similar(model_answers[0], true_answer):  # Assuming model_answers[0] is the best guess
+            print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")

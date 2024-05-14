@@ -28,7 +28,7 @@ class TestEnsembleQAPipeline(Text2TextGenerationPipeline):
             results = {'guess': guess_text, 'confidence': confidence}
         return results
 
-# # From class eval.py code
+# # # From class eval.py code
 # def normalize_answer(answer):
 #     """
 #     Remove superflous components to create a normalized form of an answer that
@@ -72,10 +72,13 @@ class QuizBowlModel:
             self.tokenizers[model_name] = tokenizer
 
     def guess_and_buzz(self, question_texts):
-        total_answers = [self.generate_answers(question) for question in question_texts]
+        total_answers = [self.generate_answers("question: " + question) for question in question_texts]
         # here to check all models responses if needed
         # for question, model_answers in zip(question_texts, total_answers):
         #     print(f"{question}\nModel Guesses: {model_answers}\n")
+        # for question, model_answers, true_answer in zip(question_texts, total_answers, true_answers):
+        #     print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+
         return [self.ensemble_tfidf_voting(answers) for answers in total_answers]
 
     def generate_answers(self, question):
@@ -104,10 +107,13 @@ class QuizBowlModel:
             confidence_score = None
         return confidence_score
 
-    def ensemble_tfidf_voting(self, all_answers):
-        return max(all_answers, key=lambda x: x[1]) if all_answers else (None, 0)
-
-
+    def ensemble_tfidf_voting(self, all_answers, boost_factor=1.2, model_index=4):
+        boosted_answers = [(answer if idx != model_index else (answer[0], answer[1] * boost_factor))
+                        for idx, answer in enumerate(all_answers)]
+        if boosted_answers:
+            return max(boosted_answers, key=lambda x: x[1])
+        else:
+            return None, 0
 # from transformers.pipelines import Pipeline, PIPELINE_REGISTRY
 # from transformers import AutoModelForSeq2SeqLM, TFAutoModelForSeq2SeqLM
 # from test_ensemble import TestEnsembleQAPipeline

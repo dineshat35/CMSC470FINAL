@@ -133,20 +133,21 @@ if __name__ == "__main__":
 
     loaded_questions = [item['text'] for item in data]  
     true_answers += [item['answer'] for item in data]
-    questions = hardcoded_questions + loaded_questions[:100]  # Increase if needed
+    questions = hardcoded_questions + loaded_questions[:20]  # Increase if needed
     total_answers = model.guess_and_buzz(questions)
     
     print("Final Answers with Voting Mechanism:")
-    # Display the model's after entire ensemble approach
-
     def is_similar(answer1, answer2):
-        # Normalize answers to lower case for case insensitive comparison
         answer1 = answer1.lower().strip()
         answer2 = answer2.lower().strip()
-        # Calculate similarity ratio
         similarity = SequenceMatcher(None, answer1, answer2).ratio()
-        return similarity > 0.8  # Consider answers similar if similarity is above 80%
-
+        return similarity > 0.8  
     for question, model_answers, true_answer in zip(questions, total_answers, true_answers):
-        if is_similar(model_answers[0], true_answer):  # Assuming model_answers[0] is the best guess
+        if is_similar(model_answers[0], true_answer): 
+            print("GUESSES AND TRUE ANSWER ARE SIMILIAR\n")
             print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+        else:
+            print("ALL MODEL GUESSES\n")
+            print(f"{question}\nModel Guesses: {model_answers}\nCorrect Answer: {true_answer}\n\n")
+
+        
